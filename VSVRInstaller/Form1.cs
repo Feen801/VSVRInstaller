@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
-using System.IO.Compression
-; using System.Reflection;
+using System.IO.Compression; 
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace VSVRInstaller
@@ -148,9 +147,36 @@ namespace VSVRInstaller
                     resourceStream.CopyTo(fileStream);
                 }
 
-                ZipFile.ExtractToDirectory(zipPath, extractPath);
+                string tempFolder = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                Directory.CreateDirectory(tempFolder);
 
-                File.Delete(zipPath);
+                try
+                {
+                    ZipFile.ExtractToDirectory(zipPath, tempFolder);
+                    CopyAndOverride(tempFolder, extractPath);
+                }
+                finally
+                {
+                    File.Delete(zipPath);
+                    Directory.Delete(tempFolder, true);
+                }
+            }
+        }
+
+        static void CopyAndOverride(string sourceFolder, string targetFolder)
+        {
+            Directory.CreateDirectory(targetFolder);
+
+            foreach (string file in Directory.GetFiles(sourceFolder))
+            {
+                string targetFilePath = Path.Combine(targetFolder, Path.GetFileName(file));
+                File.Copy(file, targetFilePath, overwrite: true);
+            }
+
+            foreach (string directory in Directory.GetDirectories(sourceFolder))
+            {
+                string targetSubFolder = Path.Combine(targetFolder, Path.GetFileName(directory));
+                CopyAndOverride(directory, targetSubFolder);
             }
         }
     }
